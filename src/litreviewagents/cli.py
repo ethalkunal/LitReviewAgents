@@ -19,7 +19,6 @@ from .config import Config
 from .memory import PaperMemory
 from .pipeline import Pipeline
 
-
 STARTER_CONFIG = """# LitReviewAgents — Project Configuration
 # ----------------------------------------
 # Fill in your manuscript context and define agents below.
@@ -139,7 +138,7 @@ def cmd_init(args):
     path = Path(args.config).expanduser().resolve()
     if path.exists() and not args.force:
         print(f"  Refusing to overwrite existing config: {path}")
-        print(f"  Use --force to overwrite.")
+        print("  Use --force to overwrite.")
         return 1
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w") as f:
