@@ -1,0 +1,199 @@
+# Example: IoT compliance & logging literature review
+# ----------------------------------------------------
+# Generic example showing how to configure LitReviewAgents for an IoT
+# security / standards-compliance manuscript. Adapt freely.
+
+project_name: "IoT Compliance Logging Review"
+
+paper_context: |
+  Topic: Edge-gateway middleware that enriches commercial IoT device telemetry
+  to meet enterprise security-standard logging requirements (ISO 27001 family,
+  GDPR, IT baseline protection schemes).
+
+  Typical reviewer demands for papers in this space:
+  - Compare against established IoT middleware (FIWARE, Eclipse Ditto, oneM2M, AWS IoT Greengrass)
+  - Justify use of synthetic vs. real-world datasets
+  - Address threat-modelling (STRIDE / LINDDUN) for the proposed component
+  - Cite specific clauses of the relevant standard, not just headline numbers
+  - Justify compliance-scoring rubric (avoid binary 0/100% framing)
+
+short_context: |
+  Edge middleware for IoT log compliance. Needs related-work coverage of
+  major middleware platforms, ISO clause-level citations, GDPR analysis,
+  threat model, synthetic-data justification, and a formal scoring rubric.
+
+# ── LLM ──────────────────────────────────────────────────────────────────────
+llm:
+  base_url: "http://localhost:11434/v1"
+  model: "qwen2.5:7b"
+  api_key: "ollama"
+  timeout: 600
+  temperature: 0.2
+
+# ── Sources ──────────────────────────────────────────────────────────────────
+sources:
+  arxiv: true
+  crossref: true
+  semantic_scholar: false
+  pubmed: false
+
+output_dir: "./output"
+memory_dir: "./memory"
+
+max_results_per_query: 4
+relevance_cap: 20
+
+# ── Agents ───────────────────────────────────────────────────────────────────
+agents:
+
+  - name: RelatedWorkAgent
+    description: "Searches for comparable IoT middleware frameworks"
+    queries:
+      - "FIWARE IoT platform security middleware architecture"
+      - "Eclipse Ditto IoT device management compliance framework"
+      - "oneM2M IoT interoperability security standard middleware"
+      - "AWS IoT Greengrass edge gateway security logging"
+      - "IoT middleware compliance transformation edge computing survey"
+    system_prompt: "You are a rigorous academic reviewer. Context: {context}"
+    user_prompt: |
+      These papers describe IoT middleware comparable to our proposed Compliance
+      Transformation Layer.
+
+      {papers}
+
+      For each relevant paper:
+      1. Name the framework and its main role.
+      2. How it differs from the Compliance Transformation Layer.
+      3. One limitation we address that it does not.
+      4. A single citation-ready sentence for the Discussion section.
+
+      Be academic and specific.
+    max_tokens: 1000
+
+  - name: StandardsAgent
+    description: "Finds ISO clause-level and GDPR article-level references"
+    queries:
+      - "ISO 27001 clause 9 monitoring measurement audit IoT"
+      - "GDPR data minimisation privacy by design IoT"
+      - "ISO 27001 2022 logging monitoring control healthcare implementation"
+      - "GDPR Article 25 privacy by design IoT"
+      - "ISO 27701 privacy information management IoT implementation"
+    system_prompt: "You are a legal-technical expert in ISO 27001 and GDPR. Context: {context}"
+    user_prompt: |
+      Our paper needs ISO clause-level and GDPR article-level citations.
+
+      {papers}
+
+      For each gap (ISO 27001 Clause 9.1, GDPR Art.5(1)(c), GDPR Art.25):
+      - Identify a supporting paper or note that the regulation should be cited directly.
+      - Draft one sentence integrating it into the manuscript.
+
+      End with an 80-word GDPR paragraph for the Discussion section.
+    max_tokens: 1000
+
+  - name: SyntheticDataAgent
+    description: "Justifies synthetic-data methodology"
+    queries:
+      - "synthetic dataset generation security research methodology justification"
+      - "IoT security dataset public benchmark availability"
+      - "audit sampling methodology statistical justification security evaluation"
+      - "synthetic log generation intrusion detection security evaluation"
+      - "UCI HAR dataset IoT activity recognition benchmark"
+    system_prompt: "You are an academic methodology expert. Context: {context}"
+    user_prompt: |
+      Our paper used synthetic IoT logs. Justify:
+      1. Why synthetic data is accepted in security research.
+      2. Why public IoT security logs are unavailable.
+      3. Statistical justification for the sample size.
+      4. How public benchmarks (CASAS, SPHERE, UCI HAR) relate.
+
+      {papers}
+
+      Draft a 150-word Methods paragraph + 3 citations for Section 2.
+    max_tokens: 900
+
+  - name: ThreatModelAgent
+    description: "Adds STRIDE/LINDDUN threat model and integrity discussion"
+    queries:
+      - "STRIDE threat modeling edge gateway IoT middleware"
+      - "LINDDUN privacy threat modeling IoT data streams"
+      - "HMAC log integrity authentication IoT alternative SHA-256"
+      - "edge computing security threat model healthcare IoT"
+      - "cryptographic log integrity chain of custody IoT forensics"
+    system_prompt: "You are a security researcher in IoT threat modeling. Context: {context}"
+    user_prompt: |
+      Add a threat model to the Discussion.
+
+      {papers}
+
+      Provide:
+      1. Three STRIDE threats specific to the edge gateway.
+      2. LINDDUN privacy risks for the transformation layer.
+      3. HMAC vs SHA-256 discussion for log integrity.
+      4. Chain-of-custody implications.
+      5. A 100-word threat-model paragraph.
+    max_tokens: 1000
+
+  - name: ComplianceScoringAgent
+    description: "Replaces binary compliance with formal scoring rubrics"
+    queries:
+      - "ISO 27001 compliance scoring rubric audit maturity model"
+      - "ISACA audit framework IoT compliance assessment"
+      - "BSI IT Grundschutz IoT security compliance measurement"
+      - "compliance measurement framework binary scoring limitation"
+      - "security audit maturity model IoT scoring"
+    system_prompt: "You are an ISO audit methodology expert. Context: {context}"
+    user_prompt: |
+      Reframe binary 0%/100% compliance scoring.
+
+      {papers}
+
+      Provide:
+      1. Formal compliance-scoring frameworks that apply.
+      2. Whether binary scoring is defensible for log-structure conformance audits.
+      3. How to reframe '100% compliance' more precisely.
+      4. An 80-word Methods addition.
+      5. 2-3 citations to add to Section 2.
+    max_tokens: 900
+
+# ── Synthesis ────────────────────────────────────────────────────────────────
+synthesis:
+  enabled: true
+  research_questions_prompt: |
+    Respond immediately — no preamble:
+
+    **RQ1**: [To what extent do commercial IoT devices fail to meet selected logging requirements?]
+    **RQ2**: [To what extent can an edge-gateway transformation layer remediate this without firmware modification?]
+    **RQ3**: [To what extent does the transformation layer scale to realistic device populations?]
+
+    **Admissibility Gap**: [One precise sentence grounded in infosec governance.]
+
+  sections:
+    - title: "Related Middleware Comparison"
+      source_agent: RelatedWorkAgent
+    - title: "Standards & GDPR Analysis"
+      source_agent: StandardsAgent
+    - title: "Synthetic Data Justification"
+      source_agent: SyntheticDataAgent
+    - title: "Threat Model"
+      source_agent: ThreatModelAgent
+    - title: "Compliance Scoring Reframing"
+      source_agent: ComplianceScoringAgent
+
+  discussion_prompt: |
+    Write three 80-word paragraphs for Discussion subsections in formal academic tone,
+    using [X] as citation placeholders.
+
+    4.3 Comparison to Related Middleware Frameworks
+    Use: {RelatedWorkAgent_analysis}
+
+    4.4 Threat Analysis of the Compliance Transformation Layer
+    Use: {ThreatModelAgent_analysis}
+
+    4.5 GDPR Compliance Implications
+    Use: {StandardsAgent_analysis}
+
+  max_tokens: 500
+
+enable_relevance_agent: true
+enable_validator: true

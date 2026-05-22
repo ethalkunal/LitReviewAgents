@@ -1,0 +1,99 @@
+# Example: Machine-learning reproducibility paper
+# -----------------------------------------------
+# Shows LitReviewAgents working for a completely different domain.
+
+project_name: "ML Reproducibility Review"
+
+paper_context: |
+  Paper proposing a reproducibility framework for empirical ML evaluations,
+  with emphasis on dataset provenance, hyperparameter logging, and
+  cross-seed result variance. Needs related-work coverage, statistical
+  methodology references, and reviewer rebuttal material.
+
+short_context: |
+  ML reproducibility framework. Needs coverage of: prior reproducibility
+  initiatives (NeurIPS, ML Reproducibility Challenge), statistical
+  significance testing for ML, dataset provenance tooling, and
+  hyperparameter logging best practice.
+
+llm:
+  base_url: "http://localhost:11434/v1"
+  model: "qwen2.5:7b"
+  api_key: "ollama"
+
+sources:
+  arxiv: true
+  crossref: true
+  semantic_scholar: false
+
+output_dir: "./output"
+memory_dir: "./memory"
+
+agents:
+
+  - name: PriorReproWorkAgent
+    description: "Prior reproducibility initiatives in ML"
+    queries:
+      - "machine learning reproducibility crisis empirical study"
+      - "NeurIPS reproducibility checklist evaluation"
+      - "ML Reproducibility Challenge community results"
+      - "reporting standards machine learning experiments"
+    system_prompt: "You are a careful ML researcher. Context: {context}"
+    user_prompt: |
+      These papers cover prior ML reproducibility work.
+
+      {papers}
+
+      For each: (1) main contribution, (2) how our framework extends it,
+      (3) one citation-ready sentence.
+    max_tokens: 900
+
+  - name: StatsMethodAgent
+    description: "Statistical methodology for ML evaluation"
+    queries:
+      - "statistical significance testing machine learning model comparison"
+      - "cross-validation variance random seed deep learning"
+      - "bootstrap confidence intervals machine learning evaluation"
+      - "Bayesian model comparison ML evaluation"
+    system_prompt: "You are a statistician advising ML practitioners. Context: {context}"
+    user_prompt: |
+      {papers}
+
+      Draft a 150-word Methods paragraph justifying the variance-reporting
+      protocol. Cite 3 papers with [X] placeholders.
+    max_tokens: 900
+
+  - name: ProvenanceAgent
+    description: "Dataset and code provenance tooling"
+    queries:
+      - "dataset provenance ML reproducibility tooling"
+      - "DVC ML pipeline reproducibility versioning"
+      - "MLflow experiment tracking reproducibility"
+      - "Weights and Biases hyperparameter logging research"
+    system_prompt: "You are a tooling-focused engineer. Context: {context}"
+    user_prompt: |
+      {papers}
+
+      Compare 3 dominant provenance tools and explain which gap our framework
+      fills that none of them address.
+    max_tokens: 900
+
+synthesis:
+  enabled: true
+  research_questions_prompt: |
+    Respond immediately — no preamble:
+
+    **RQ1**: To what extent are current ML papers reproducible under our criteria?
+    **RQ2**: What additional reporting elements close the most variance?
+    **RQ3**: At what marginal author-cost can high reproducibility be achieved?
+
+  sections:
+    - title: "Prior Reproducibility Work"
+      source_agent: PriorReproWorkAgent
+    - title: "Statistical Methodology"
+      source_agent: StatsMethodAgent
+    - title: "Provenance Tooling Comparison"
+      source_agent: ProvenanceAgent
+
+enable_relevance_agent: true
+enable_validator: true
