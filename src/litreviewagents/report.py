@@ -18,14 +18,14 @@ class ArtifactStore:
         self.artifacts = {}
 
     def store(self, agent_name, artifact_type, content, parent_ids=None):
-        uid = hashlib.md5(
-            f"{agent_name}{artifact_type}{time.time()}".encode()
-        ).hexdigest()[:8]
+        uid = hashlib.md5(f"{agent_name}{artifact_type}{time.time()}".encode()).hexdigest()[:8]
         artifact = {
             "id": uid,
             "agent": agent_name,
             "type": artifact_type,
-            "content": content if not _has_papers(content) else [p if isinstance(p, dict) else p.to_dict() for p in content],
+            "content": content
+            if not _has_papers(content)
+            else [p if isinstance(p, dict) else p.to_dict() for p in content],
             "parents": parent_ids or [],
             "timestamp": datetime.now(timezone.utc).isoformat(),
         }
@@ -59,8 +59,7 @@ class Report:
         path = self.session_dir / filename
         with open(path, "w") as f:
             f.write(f"# {self.project_name} — Literature Review Report\n\n")
-            f.write(f"*Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')} | "
-                    f"Model: {self.model}*\n\n")
+            f.write(f"*Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')} | Model: {self.model}*\n\n")
             f.write("> **VALIDATION REQUIRED**: All findings must be verified before manuscript use.\n")
             f.write("> Preprint links (arxiv) should be checked for peer-review status before citing.\n\n")
             f.write("---\n\n")
@@ -71,6 +70,7 @@ class Report:
 
 
 # ── Formatters ─────────────────────────────────────────────────────────────────
+
 
 def fmt_papers_compact(papers, max_n=3, abstract_len=150):
     """Compact paper formatter for LLM prompts — caps to limit prompt tokens."""
@@ -83,9 +83,7 @@ def fmt_papers_compact(papers, max_n=3, abstract_len=150):
         authors = p["authors"] if isinstance(p, dict) else p.authors
         abstract = p["abstract"] if isinstance(p, dict) else p.abstract
         out.append(
-            f"[{i + 1}] {title} ({date})\n"
-            f"    Authors: {', '.join(authors)}\n"
-            f"    {abstract[:abstract_len]}..."
+            f"[{i + 1}] {title} ({date})\n    Authors: {', '.join(authors)}\n    {abstract[:abstract_len]}..."
         )
     return "\n\n".join(out)
 

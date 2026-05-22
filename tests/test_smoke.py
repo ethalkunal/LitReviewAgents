@@ -10,8 +10,8 @@ from litreviewagents import Config, PaperMemory
 from litreviewagents.llm import strip_reasoning_preamble
 from litreviewagents.sources import SOURCES, BaseSource, Paper, get_source, register_source
 
-
 # ── Config loading ─────────────────────────────────────────────────────────────
+
 
 def test_config_loads_iot_example():
     """The bundled IoT example should load and validate."""
@@ -68,6 +68,7 @@ sources:
 
 # ── Memory ─────────────────────────────────────────────────────────────────────
 
+
 def test_paper_memory_lifecycle(tmp_path):
     mem = PaperMemory(tmp_path)
     assert mem.load_accepted_urls() == set()
@@ -92,6 +93,7 @@ def test_paper_memory_seen_failsafe(tmp_path):
 
 # ── Reasoning preamble stripping ──────────────────────────────────────────────
 
+
 def test_strip_preamble_passthrough_for_clean_text():
     clean = "## Section\n\nThis is fine."
     assert strip_reasoning_preamble(clean) == clean
@@ -110,12 +112,13 @@ def test_strip_preamble_handles_empty():
 
 
 def test_strip_preamble_detects_infinite_loop():
-    looped = ("Wait, the user wants the answer. " * 30)
+    looped = "Wait, the user wants the answer. " * 30
     out = strip_reasoning_preamble(looped)
     assert "infinite reasoning loop" in out.lower() or "reasoning loop" in out.lower()
 
 
 # ── Sources registry ──────────────────────────────────────────────────────────
+
 
 def test_sources_registered():
     assert "arxiv" in SOURCES
@@ -137,11 +140,19 @@ def test_get_source_unknown_raises():
 def test_register_custom_source():
     class FakeSource(BaseSource):
         name = "fake"
+
         def search(self, query, max_results=5):
-            return [Paper(
-                title="Fake paper", abstract="abstract", authors=["X"],
-                url="https://fake", date="2024-01-01", source="fake",
-            )]
+            return [
+                Paper(
+                    title="Fake paper",
+                    abstract="abstract",
+                    authors=["X"],
+                    url="https://fake",
+                    date="2024-01-01",
+                    source="fake",
+                )
+            ]
+
     register_source("fake", FakeSource)
     assert "fake" in SOURCES
     papers = get_source("fake").search("anything")
@@ -149,8 +160,7 @@ def test_register_custom_source():
 
 
 def test_paper_to_dict():
-    p = Paper(title="T", abstract="A", authors=["X"], url="https://u",
-              date="2024-01-01", source="arxiv")
+    p = Paper(title="T", abstract="A", authors=["X"], url="https://u", date="2024-01-01", source="arxiv")
     d = p.to_dict()
     assert d["title"] == "T"
     assert d["citations"] is None

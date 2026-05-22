@@ -30,6 +30,7 @@ from .sources import get_source
 @dataclass
 class PipelineContext:
     """Shared state passed to every agent during a run."""
+
     config: Config
     llm: LLMClient
     memory: PaperMemory
@@ -134,7 +135,9 @@ class Pipeline:
             self.agents.insert(position, agent)
 
     def run(self):
-        session_id = f"{self.config.project_name.lower().replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        session_id = (
+            f"{self.config.project_name.lower().replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        )
         session_dir = Path(self.config.output_dir) / session_id
         store = ArtifactStore(session_dir)
         ctx = PipelineContext(
@@ -144,7 +147,7 @@ class Pipeline:
             store=store,
         )
 
-        active_sources = ', '.join(s for s, on in self.config.sources.items() if on)
+        active_sources = ", ".join(s for s, on in self.config.sources.items() if on)
         total_queries = sum(len(a.queries) for a in self.config.agents)
 
         print(f"\n{'=' * 62}")

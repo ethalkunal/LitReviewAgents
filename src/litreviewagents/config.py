@@ -7,7 +7,7 @@ LitReviewAgents is YAML-driven. A single config file defines:
 - Paper sources (arxiv, crossref, semantic_scholar, pubmed)
 - Agents — each with queries, system prompt template, and user prompt template
 
-See `examples/iot_compliance.yaml` for a full annotated example.
+See `examples/iot_iso27001.yaml` for a full annotated example.
 """
 
 import os
@@ -18,9 +18,7 @@ from typing import Optional
 try:
     import yaml
 except ImportError as e:
-    raise ImportError(
-        "PyYAML is required. Install with: pip install pyyaml"
-    ) from e
+    raise ImportError("PyYAML is required. Install with: pip install pyyaml") from e
 
 
 @dataclass
@@ -54,6 +52,7 @@ class AgentConfig:
             For each relevant paper: ...
           max_tokens: 1000
     """
+
     name: str
     description: str = ""
     queries: list = field(default_factory=list)
@@ -66,6 +65,7 @@ class AgentConfig:
 @dataclass
 class SynthesisConfig:
     """Configuration for the final synthesis step (optional)."""
+
     enabled: bool = True
     sections: list = field(default_factory=list)
     research_questions_prompt: Optional[str] = None
@@ -79,15 +79,15 @@ class Config:
 
     # Project identity
     project_name: str
-    paper_context: str          # full context for synthesis
-    short_context: str          # trimmed context for per-call prompts
+    paper_context: str  # full context for synthesis
+    short_context: str  # trimmed context for per-call prompts
 
     # Backends
     llm: LLMConfig
-    sources: dict               # {source_name: bool}
+    sources: dict  # {source_name: bool}
 
     # Agents
-    agents: list                # list[AgentConfig]
+    agents: list  # list[AgentConfig]
 
     # Output paths
     output_dir: Path
@@ -121,7 +121,9 @@ class Config:
         # LLM section — environment variable substitution
         llm_raw = raw.get("llm", {})
         llm = LLMConfig(
-            base_url=os.environ.get("LITREVIEW_BASE_URL", llm_raw.get("base_url", "http://localhost:11434/v1")),
+            base_url=os.environ.get(
+                "LITREVIEW_BASE_URL", llm_raw.get("base_url", "http://localhost:11434/v1")
+            ),
             model=os.environ.get("LITREVIEW_MODEL", llm_raw.get("model", "qwen2.5:7b")),
             api_key=os.environ.get("LITREVIEW_API_KEY", llm_raw.get("api_key", "ollama")),
             timeout=llm_raw.get("timeout", 600),
@@ -133,22 +135,23 @@ class Config:
         )
 
         # Sources — default to arxiv + crossref enabled
-        sources_default = {"arxiv": True, "crossref": True,
-                           "semantic_scholar": False, "pubmed": False}
+        sources_default = {"arxiv": True, "crossref": True, "semantic_scholar": False, "pubmed": False}
         sources = {**sources_default, **raw.get("sources", {})}
 
         # Agents
         agents = []
         for a in raw.get("agents", []):
-            agents.append(AgentConfig(
-                name=a["name"],
-                description=a.get("description", ""),
-                queries=a.get("queries", []),
-                system_prompt=a.get("system_prompt", "You are a rigorous academic reviewer."),
-                user_prompt=a.get("user_prompt", "Analyze these papers:\n\n{papers}"),
-                max_tokens=a.get("max_tokens", 800),
-                artifact_type=a.get("artifact_type"),
-            ))
+            agents.append(
+                AgentConfig(
+                    name=a["name"],
+                    description=a.get("description", ""),
+                    queries=a.get("queries", []),
+                    system_prompt=a.get("system_prompt", "You are a rigorous academic reviewer."),
+                    user_prompt=a.get("user_prompt", "Analyze these papers:\n\n{papers}"),
+                    max_tokens=a.get("max_tokens", 800),
+                    artifact_type=a.get("artifact_type"),
+                )
+            )
 
         # Synthesis
         syn_raw = raw.get("synthesis", {})

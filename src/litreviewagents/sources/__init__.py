@@ -20,6 +20,7 @@ from typing import Optional
 
 try:
     import certifi
+
     _SSL_CTX = ssl.create_default_context(cafile=certifi.where())
 except ImportError:
     _SSL_CTX = ssl.create_default_context()
@@ -28,6 +29,7 @@ except ImportError:
 @dataclass
 class Paper:
     """Normalized paper record returned by every source."""
+
     title: str
     abstract: str
     authors: list
@@ -61,13 +63,16 @@ class BaseSource(ABC):
 
 # ── arxiv ─────────────────────────────────────────────────────────────────────
 
+
 class ArxivSource(BaseSource):
     name = "arxiv"
 
     def search(self, query, max_results=5):
         q = urllib.parse.quote(query)
-        url = (f"https://export.arxiv.org/api/query"
-               f"?search_query=all:{q}&max_results={max_results}&sortBy=relevance")
+        url = (
+            f"https://export.arxiv.org/api/query"
+            f"?search_query=all:{q}&max_results={max_results}&sortBy=relevance"
+        )
         try:
             with urllib.request.urlopen(url, timeout=30, context=_SSL_CTX) as resp:
                 tree = ET.parse(resp)
@@ -83,15 +88,23 @@ class ArxivSource(BaseSource):
             link = entry.findtext("atom:id", "", ns).strip()
             date = entry.findtext("atom:published", "", ns)[:10]
             if title:
-                papers.append(Paper(
-                    title=title, abstract=abstract[:500], authors=authors[:3],
-                    url=link, date=date, source="arxiv",
-                    citations=None, peer_reviewed=False,
-                ))
+                papers.append(
+                    Paper(
+                        title=title,
+                        abstract=abstract[:500],
+                        authors=authors[:3],
+                        url=link,
+                        date=date,
+                        source="arxiv",
+                        citations=None,
+                        peer_reviewed=False,
+                    )
+                )
         return papers
 
 
 # ── Semantic Scholar ──────────────────────────────────────────────────────────
+
 
 class SemanticScholarSource(BaseSource):
     name = "semantic_scholar"
@@ -99,9 +112,11 @@ class SemanticScholarSource(BaseSource):
     def search(self, query, max_results=5):
         api_key = os.environ.get("SEMANTIC_SCHOLAR_API_KEY", "")
         q = urllib.parse.quote(query)
-        url = (f"https://api.semanticscholar.org/graph/v1/paper/search"
-               f"?query={q}&limit={max_results}"
-               f"&fields=title,abstract,authors,year,citationCount,externalIds,openAccessPdf")
+        url = (
+            f"https://api.semanticscholar.org/graph/v1/paper/search"
+            f"?query={q}&limit={max_results}"
+            f"&fields=title,abstract,authors,year,citationCount,externalIds,openAccessPdf"
+        )
         headers = {"User-Agent": "LitReviewAgents/0.1"}
         if api_key:
             headers["x-api-key"] = api_key
@@ -116,8 +131,7 @@ class SemanticScholarSource(BaseSource):
             except Exception as e:
                 if "429" in str(e):
                     wait = (5 if api_key else 20) * (attempt + 1)
-                    self._log(f"rate limited — waiting {wait}s "
-                              f"({'keyed' if api_key else 'no API key set'})")
+                    self._log(f"rate limited — waiting {wait}s ({'keyed' if api_key else 'no API key set'})")
                     time.sleep(wait)
                     continue
                 self._log(f"failed: {e}")
@@ -146,15 +160,23 @@ class SemanticScholarSource(BaseSource):
                 url_out = f"https://www.semanticscholar.org/paper/{paper_id}"
             peer_reviewed = bool(doi and not arxiv_id)
             if title:
-                papers.append(Paper(
-                    title=title, abstract=abstract, authors=authors,
-                    url=url_out, date=date, source="semantic_scholar",
-                    citations=citations, peer_reviewed=peer_reviewed,
-                ))
+                papers.append(
+                    Paper(
+                        title=title,
+                        abstract=abstract,
+                        authors=authors,
+                        url=url_out,
+                        date=date,
+                        source="semantic_scholar",
+                        citations=citations,
+                        peer_reviewed=peer_reviewed,
+                    )
+                )
         return papers
 
 
 # ── CrossRef ──────────────────────────────────────────────────────────────────
+
 
 class CrossrefSource(BaseSource):
     name = "crossref"
@@ -162,9 +184,11 @@ class CrossrefSource(BaseSource):
     def search(self, query, max_results=5):
         q = urllib.parse.quote(query)
         mailto = os.environ.get("CROSSREF_MAILTO", "litreviewagents@example.com")
-        url = (f"https://api.crossref.org/works"
-               f"?query={q}&rows={max_results}&sort=relevance"
-               f"&select=title,abstract,author,published,DOI,container-title,is-referenced-by-count")
+        url = (
+            f"https://api.crossref.org/works"
+            f"?query={q}&rows={max_results}&sort=relevance"
+            f"&select=title,abstract,author,published,DOI,container-title,is-referenced-by-count"
+        )
         try:
             req = urllib.request.Request(
                 url, headers={"User-Agent": f"LitReviewAgents/0.1 (mailto:{mailto})"}
@@ -181,34 +205,41 @@ class CrossrefSource(BaseSource):
             abstract = (item.get("abstract") or "")[:500]
             abstract = abstract.replace("<jats:p>", "").replace("</jats:p>", "").strip()
             authors_raw = item.get("author", [])
-            authors = [f"{a.get('given', '')} {a.get('family', '')}".strip()
-                       for a in authors_raw[:3]]
+            authors = [f"{a.get('given', '')} {a.get('family', '')}".strip() for a in authors_raw[:3]]
             pub_date = item.get("published", {}).get("date-parts", [[2000]])[0]
-            date = (f"{pub_date[0]}-{pub_date[1]:02d}-01"
-                    if len(pub_date) > 1 else f"{pub_date[0]}-01-01")
+            date = f"{pub_date[0]}-{pub_date[1]:02d}-01" if len(pub_date) > 1 else f"{pub_date[0]}-01-01"
             doi = item.get("DOI", "")
             url_out = f"https://doi.org/{doi}" if doi else ""
             journal = item.get("container-title", [""])[0]
             citations = item.get("is-referenced-by-count", 0)
             if title and url_out:
-                papers.append(Paper(
-                    title=title, abstract=abstract, authors=authors,
-                    url=url_out, date=date,
-                    source=f"crossref ({journal})" if journal else "crossref",
-                    citations=citations, peer_reviewed=True,
-                ))
+                papers.append(
+                    Paper(
+                        title=title,
+                        abstract=abstract,
+                        authors=authors,
+                        url=url_out,
+                        date=date,
+                        source=f"crossref ({journal})" if journal else "crossref",
+                        citations=citations,
+                        peer_reviewed=True,
+                    )
+                )
         return papers
 
 
 # ── PubMed ────────────────────────────────────────────────────────────────────
+
 
 class PubMedSource(BaseSource):
     name = "pubmed"
 
     def search(self, query, max_results=5):
         q = urllib.parse.quote(query)
-        search_url = (f"https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
-                      f"?db=pubmed&term={q}&retmax={max_results}&retmode=json&sort=relevance")
+        search_url = (
+            f"https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
+            f"?db=pubmed&term={q}&retmax={max_results}&retmode=json&sort=relevance"
+        )
         try:
             with urllib.request.urlopen(search_url, timeout=30, context=_SSL_CTX) as resp:
                 search_data = json.loads(resp.read())
@@ -220,8 +251,9 @@ class PubMedSource(BaseSource):
             return []
 
         ids_str = ",".join(ids)
-        fetch_url = (f"https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi"
-                     f"?db=pubmed&id={ids_str}&retmode=json")
+        fetch_url = (
+            f"https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&id={ids_str}&retmode=json"
+        )
         try:
             with urllib.request.urlopen(fetch_url, timeout=30, context=_SSL_CTX) as resp:
                 fetch_data = json.loads(resp.read())
@@ -238,15 +270,28 @@ class PubMedSource(BaseSource):
             date = item.get("pubdate", "2000")[:10].replace(" ", "0")[:10]
             if len(date) < 10:
                 date = date[:4] + "-01-01"
-            doi = next((id_obj.get("value", "") for id_obj in item.get("articleids", [])
-                        if id_obj.get("idtype") == "doi"), "")
+            doi = next(
+                (
+                    id_obj.get("value", "")
+                    for id_obj in item.get("articleids", [])
+                    if id_obj.get("idtype") == "doi"
+                ),
+                "",
+            )
             url_out = f"https://doi.org/{doi}" if doi else f"https://pubmed.ncbi.nlm.nih.gov/{uid}/"
             if title:
-                papers.append(Paper(
-                    title=title, abstract="(See PubMed for abstract)",
-                    authors=authors, url=url_out, date=date,
-                    source="pubmed", citations=None, peer_reviewed=True,
-                ))
+                papers.append(
+                    Paper(
+                        title=title,
+                        abstract="(See PubMed for abstract)",
+                        authors=authors,
+                        url=url_out,
+                        date=date,
+                        source="pubmed",
+                        citations=None,
+                        peer_reviewed=True,
+                    )
+                )
         return papers
 
 

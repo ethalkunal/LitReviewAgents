@@ -38,15 +38,17 @@ class PaperMemory:
         if any(p["url"] == url for p in data["papers"]):
             print(f"  Already accepted: {title[:60]}")
             return
-        data["papers"].append({
-            "url": url,
-            "title": title,
-            "authors": authors if isinstance(authors, list) else [a.strip() for a in authors.split(",")],
-            "date": date,
-            "section": section,
-            "notes": notes,
-            "accepted": datetime.now().strftime("%Y-%m-%d"),
-        })
+        data["papers"].append(
+            {
+                "url": url,
+                "title": title,
+                "authors": authors if isinstance(authors, list) else [a.strip() for a in authors.split(",")],
+                "date": date,
+                "section": section,
+                "notes": notes,
+                "accepted": datetime.now().strftime("%Y-%m-%d"),
+            }
+        )
         with open(self.accepted_file, "w") as f:
             json.dump(data, f, indent=2)
         print(f"  Accepted: [{len(data['papers'])}] {title[:60]}")
@@ -89,12 +91,14 @@ class PaperMemory:
         if any(p["url"] == url for p in data["papers"]):
             print(f"  Already rejected: {title[:60]}")
             return
-        data["papers"].append({
-            "url": url,
-            "title": title,
-            "reason": reason,
-            "rejected": datetime.now().strftime("%Y-%m-%d"),
-        })
+        data["papers"].append(
+            {
+                "url": url,
+                "title": title,
+                "reason": reason,
+                "rejected": datetime.now().strftime("%Y-%m-%d"),
+            }
+        )
         with open(self.rejected_file, "w") as f:
             json.dump(data, f, indent=2)
         print(f"  Rejected: [{len(data['papers'])}] {title[:60]}")

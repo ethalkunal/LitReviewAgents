@@ -164,14 +164,16 @@ class RelevanceAgent(Agent):
         # Batch through LLM
         entries = []
         for i in range(0, len(papers_eval), self.batch_size):
-            batch = papers_eval[i:i + self.batch_size]
-            batch_fmt = "\n\n".join([
-                f"[{j + 1}] TITLE: {p['title']}\n"
-                f"    DATE: {p['date']} | AUTHORS: {', '.join(p['authors'])}\n"
-                f"    URL: {p['url']}\n"
-                f"    ABSTRACT: {p['abstract'][:180]}..."
-                for j, p in enumerate(batch)
-            ])
+            batch = papers_eval[i : i + self.batch_size]
+            batch_fmt = "\n\n".join(
+                [
+                    f"[{j + 1}] TITLE: {p['title']}\n"
+                    f"    DATE: {p['date']} | AUTHORS: {', '.join(p['authors'])}\n"
+                    f"    URL: {p['url']}\n"
+                    f"    ABSTRACT: {p['abstract'][:180]}..."
+                    for j, p in enumerate(batch)
+                ]
+            )
 
             response = ctx.llm.chat(
                 f"You are a manuscript reviewer. Context: {ctx.config.short_context}",
@@ -186,9 +188,7 @@ class RelevanceAgent(Agent):
                 f"---",
                 max_tokens=400,
             )
-            entries.append(
-                f"### Papers {i + 1}–{min(i + self.batch_size, len(papers_eval))}\n\n{response}"
-            )
+            entries.append(f"### Papers {i + 1}–{min(i + self.batch_size, len(papers_eval))}\n\n{response}")
             print(f"    Evaluated papers {i + 1}–{min(i + self.batch_size, len(papers_eval))}")
             if i + self.batch_size < len(papers_eval):
                 time.sleep(self.cooldown)

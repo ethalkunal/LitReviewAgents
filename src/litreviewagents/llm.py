@@ -23,6 +23,7 @@ from typing import Optional
 
 try:
     import certifi
+
     _SSL_CTX = ssl.create_default_context(cafile=certifi.where())
 except ImportError:
     _SSL_CTX = ssl.create_default_context()
@@ -31,11 +32,21 @@ except ImportError:
 # ── Reasoning preamble cleanup ────────────────────────────────────────────────
 
 _PREAMBLE_PHRASES = [
-    "okay, let's", "okay, i need", "okay, the user", "okay, so",
-    "let me think", "let me break", "let me tackle", "let me check",
-    "first, i need", "first, let's", "first, looking",
-    "alright, let's", "alright, i need",
-    "so, the user", "so, let's",
+    "okay, let's",
+    "okay, i need",
+    "okay, the user",
+    "okay, so",
+    "let me think",
+    "let me break",
+    "let me tackle",
+    "let me check",
+    "first, i need",
+    "first, let's",
+    "first, looking",
+    "alright, let's",
+    "alright, i need",
+    "so, the user",
+    "so, let's",
     "the user wants me to",
     "i need to figure out",
     "let's tackle this",
@@ -67,7 +78,7 @@ def _detect_infinite_loop(text: str) -> bool:
     seen = {}
     window = 8
     for i in range(len(words) - window):
-        phrase = " ".join(words[i:i + window])
+        phrase = " ".join(words[i : i + window])
         seen[phrase] = seen.get(phrase, 0) + 1
         if seen[phrase] >= 4:
             return True
@@ -98,10 +109,14 @@ def strip_reasoning_preamble(text: str) -> str:
         paragraphs = [p.strip() for p in text.split("\n\n") if len(p.strip()) > 80]
         for para in paragraphs:
             if not any(p in para.lower() for p in _PREAMBLE_PHRASES[:8]):
-                return (para + "\n\n[Note: Truncated — model entered a reasoning loop. "
-                               "Consider refining the query.]")
-        return ("[Analysis unavailable — model entered an infinite reasoning loop. "
-                "Try refining the query or using a different model.]")
+                return (
+                    para + "\n\n[Note: Truncated — model entered a reasoning loop. "
+                    "Consider refining the query.]"
+                )
+        return (
+            "[Analysis unavailable — model entered an infinite reasoning loop. "
+            "Try refining the query or using a different model.]"
+        )
 
     # Find first content marker and return from there
     earliest = None
@@ -113,18 +128,21 @@ def strip_reasoning_preamble(text: str) -> str:
     if earliest is not None:
         stripped = text[earliest:].strip()
         last_complete = max(
-            stripped.rfind(".\n"), stripped.rfind("!\n"),
-            stripped.rfind("?\n"), stripped.rfind("---"),
+            stripped.rfind(".\n"),
+            stripped.rfind("!\n"),
+            stripped.rfind("?\n"),
+            stripped.rfind("---"),
             stripped.rfind("**\n"),
         )
         if last_complete > len(stripped) * 0.5:
-            stripped = stripped[:last_complete + 1].strip()
+            stripped = stripped[: last_complete + 1].strip()
         return stripped if stripped else text
 
     return text[:400] + "... [truncated — no structured content found]"
 
 
 # ── LLM Client ────────────────────────────────────────────────────────────────
+
 
 class LLMClient:
     """
@@ -204,8 +222,10 @@ class LLMClient:
         )
 
         try:
-            print(f"    [LLM] attempt {attempt + 1}/{self.max_retries + 1} "
-                  f"(timeout={self.timeout}s, max_tokens={max_tokens})")
+            print(
+                f"    [LLM] attempt {attempt + 1}/{self.max_retries + 1} "
+                f"(timeout={self.timeout}s, max_tokens={max_tokens})"
+            )
             with urllib.request.urlopen(req, timeout=self.timeout, context=_SSL_CTX) as resp:
                 raw = resp.read()
                 data = json.loads(raw)
